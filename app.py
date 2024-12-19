@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import psycopg2
 import os
 
@@ -18,8 +18,11 @@ else:
     conn = None  # You can handle this case or use a fallback database if needed
 
 @app.route('/')
-def hello():
-    return "Hello, world!"
+def index():
+    # If the user is logged in, redirect them to the welcome page
+    if 'user_id' in session:
+        return redirect(url_for('welcome'))
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -29,15 +32,16 @@ def login():
 
         if conn:
             try:
-                # Query database
+                # Query database for user credentials
                 cur = conn.cursor()
                 cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
                 user = cur.fetchone()
                 cur.close()
 
                 if user:
+                    session['user_id'] = user[0]  # Store user ID in session
                     flash('Login successful!', 'success')
-                    return redirect(url_for('welcome'))  # Redirect to the Christmas greeting page
+                    return redirect(url_for('welcome'))  # Redirect to the welcome page
                 else:
                     flash('Invalid credentials', 'danger')
             except Exception as e:
@@ -66,12 +70,20 @@ def register():
         else:
             flash("Database connection error", 'danger')
 
-    return render_template('login.html')
+    return render_template('register.html')  # Make sure you create a register.html template
 
 @app.route('/welcome')
 def welcome():
-    # Page for "Merry Christmas" message
+    if 'user_id' not in session:
+        flash('You need to log in first', 'warning')
+        return redirect(url_for('login'))
     return render_template('welcome.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)  # Remove user ID from session
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))  # Redirect to homepage
 
 if __name__ == '__main__':
     # Ensure Flask listens on 0.0.0.0 to be accessible externally
