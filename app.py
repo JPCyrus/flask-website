@@ -13,7 +13,7 @@ port = int(os.environ.get("PORT", 5000))
 db_url = os.environ.get("DATABASE_URL")  # This should be set in Render's environment variables
 
 if db_url:
-    # Parse the database URL
+    # Parse the database URL using urllib.parse
     url = urlparse(db_url)
 
     # Extract the necessary components from the parsed URL
@@ -24,14 +24,19 @@ if db_url:
     port = url.port
 
     # Establish a secure database connection using the URL details
-    conn = psycopg2.connect(
-        dbname=dbname,
-        user=user,
-        password=password,
-        host=host,
-        port=port,
-        sslmode='require'  # SSL mode is required for Render's PostgreSQL service
-    )
+    try:
+        conn = psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
+            sslmode='require'  # SSL mode required by Render's PostgreSQL service
+        )
+        print("Database connection established successfully.")
+    except Exception as e:
+        print(f"Error: Unable to connect to the database. {e}")
+        conn = None
 else:
     conn = None  # Handle this case if DATABASE_URL is not set
 
