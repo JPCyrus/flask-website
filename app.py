@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import psycopg2
 import os
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -9,13 +10,31 @@ app.secret_key = 'your_secret_key'
 port = int(os.environ.get("PORT", 5000))
 
 # Get the database connection URL from environment variables
-db_url = os.environ.get("DATABASE_URL")  # Set this in Render's environment variables
+db_url = os.environ.get("DATABASE_URL")  # This should be set in Render's environment variables
 
-# Establish a secure database connection using DATABASE_URL
 if db_url:
-    conn = psycopg2.connect(db_url, sslmode='require')  # SSL mode required for Render's PostgreSQL service
+    # Parse the database URL
+    url = urlparse(db_url)
+
+    # Extract the necessary components from the parsed URL
+    dbname = url.path[1:]
+    user = url.username
+    password = url.password
+    host = url.hostname
+    port = url.port
+
+    # Establish a secure database connection using the URL details
+    conn = psycopg2.connect(
+        dbname=dbname,
+        user=user,
+        password=password,
+        host=host,
+        port=port,
+        sslmode='require'  # SSL mode is required for Render's PostgreSQL service
+    )
 else:
-    conn = None  # You can handle this case or use a fallback database if needed
+    conn = None  # Handle this case if DATABASE_URL is not set
+
 
 @app.route('/')
 def index():
@@ -23,6 +42,7 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('welcome'))
     return render_template('index.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -51,6 +71,7 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -72,6 +93,7 @@ def register():
 
     return render_template('register.html')  # Make sure you create a register.html template
 
+
 @app.route('/welcome')
 def welcome():
     if 'user_id' not in session:
@@ -79,11 +101,13 @@ def welcome():
         return redirect(url_for('login'))
     return render_template('welcome.html')
 
+
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)  # Remove user ID from session
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))  # Redirect to homepage
+
 
 if __name__ == '__main__':
     # Ensure Flask listens on 0.0.0.0 to be accessible externally
