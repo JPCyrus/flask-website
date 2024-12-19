@@ -1,8 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import psycopg2
+import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+
+# Get the port from the environment variable (default to 5000 if not set)
+port = int(os.environ.get("PORT", 5000))
 
 # Database connection
 conn = psycopg2.connect(
@@ -11,6 +15,12 @@ conn = psycopg2.connect(
     password="admin",
     host="localhost"
 )
+@app.route('/')
+def hello():
+    return "Hello, world!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=port)
 
 @app.route('/')
 def index():
