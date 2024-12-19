@@ -13,18 +13,18 @@ port = int(os.environ.get("PORT", 5000))
 db_url = os.environ.get("DATABASE_URL")  # This should be set in Render's environment variables
 
 if db_url:
-    # Parse the database URL using urllib.parse
-    url = urlparse(db_url)
-
-    # Extract the necessary components from the parsed URL
-    dbname = url.path[1:]
-    user = url.username
-    password = url.password
-    host = url.hostname
-    port = url.port
-
-    # Establish a secure database connection using the URL details
     try:
+        # Parse the database URL using urllib.parse
+        url = urlparse(db_url)
+
+        # Extract the necessary components from the parsed URL
+        dbname = url.path[1:]
+        user = url.username
+        password = url.password
+        host = url.hostname
+        port = url.port
+
+        # Establish a secure database connection using the URL details
         conn = psycopg2.connect(
             dbname=dbname,
             user=user,
@@ -36,14 +36,14 @@ if db_url:
         print("Database connection established successfully.")
     except Exception as e:
         print(f"Error: Unable to connect to the database. {e}")
-        conn = None
+        conn = None  # Set conn to None if the connection fails
 else:
+    print("Error: DATABASE_URL is not set.")
     conn = None  # Handle this case if DATABASE_URL is not set
 
 
 @app.route('/')
 def index():
-    # If the user is logged in, redirect them to the welcome page
     if 'user_id' in session:
         return redirect(url_for('welcome'))
     return render_template('index.html')
@@ -66,13 +66,15 @@ def login():
                 if user:
                     session['user_id'] = user[0]  # Store user ID in session
                     flash('Login successful!', 'success')
-                    return redirect(url_for('welcome'))  # Redirect to the welcome page
+                    return redirect(url_for('welcome'))
                 else:
                     flash('Invalid credentials', 'danger')
             except Exception as e:
                 flash(f"Database error: {e}", 'danger')
+                print(f"Database query error: {e}")
         else:
             flash("Database connection error", 'danger')
+            print("Database connection error")
 
     return render_template('login.html')
 
@@ -93,8 +95,10 @@ def register():
                 return redirect(url_for('login'))
             except Exception as e:
                 flash(f'Error: {e}', 'danger')
+                print(f"Error during registration: {e}")
         else:
             flash("Database connection error", 'danger')
+            print("Database connection error")
 
     return render_template('register.html')  # Make sure you create a register.html template
 
