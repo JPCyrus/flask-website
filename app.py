@@ -8,23 +8,16 @@ app.secret_key = 'your_secret_key'
 # Get the port from the environment variable (default to 5000 if not set)
 port = int(os.environ.get("PORT", 5000))
 
-# Database connection
-conn = psycopg2.connect(
-    dbname="salesdb",
-    user="postgres",
-    password="admin",
-    host="localhost"
-)
+# Get the database connection details from environment variables
+db_url = os.environ.get("DATABASE_URL")  # Set this in Render's environment variables
+if db_url:
+    conn = psycopg2.connect(db_url, sslmode='require')  # Add sslmode for secure connection
+else:
+    conn = None
+
 @app.route('/')
 def hello():
     return "Hello, world!"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
